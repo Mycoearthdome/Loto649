@@ -1,0 +1,13 @@
+[package]
+name = "Loto649"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tch = "0.4.0"  # PyTorch bindings for Rust
+rand = "0.8"  # To generate random data
+ndarray = "0.15"  # Optional, for matrix operations
+
+[[bin]]
+name = "Loto649"
+path = "Loto649.rs"

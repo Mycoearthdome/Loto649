@@ -104,6 +104,7 @@ fn train_model(
 
     for epoch in 0..num_epochs {
         let mut total_loss = 0.0;
+        let mut f_loss= 0.0;
 
         for (input, target) in inputs.iter().zip(targets.iter()) {
             let input_tensor = Tensor::of_slice(input).view([1, NUM_NUMBERS]).to(Device::Cpu);
@@ -111,7 +112,9 @@ fn train_model(
 
             let output = model.forward(&input_tensor);
             let loss = mse_loss(&output, &target_tensor);
-            total_loss += f64::from(loss.detach());
+            f_loss = f64::from(loss.detach());
+            total_loss += f_loss;
+
 
             optimizer.zero_grad();
             loss.backward();
@@ -119,7 +122,7 @@ fn train_model(
         }
 
         let avg_loss = total_loss / inputs.len() as f64;
-        final_loss = avg_loss;
+        final_loss = f_loss; //avg_loss;
 
         if epoch % 100 == 0 {
             println!("Epoch {}: Avg Loss = {:.6}", epoch, avg_loss);

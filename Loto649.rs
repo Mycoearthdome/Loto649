@@ -14,14 +14,16 @@ struct LottoNN {
     fc1: nn::Linear,
     fc2: nn::Linear,
     fc3: nn::Linear,
+    fc4: nn::Linear,
 }
 
 impl LottoNN {
     fn new(vs: &nn::Path) -> LottoNN {
-        let fc1 = nn::linear(vs, NUM_NUMBERS, 128, Default::default());
-        let fc2 = nn::linear(vs, 128, 128, Default::default());
-        let fc3 = nn::linear(vs, 128, NUM_NUMBERS, Default::default());
-        LottoNN { fc1, fc2, fc3 }
+        let fc1 = nn::linear(vs, NUM_NUMBERS, 512, Default::default());
+        let fc2 = nn::linear(vs, 512, 256, Default::default());
+        let fc3 = nn::linear(vs, 256, 128, Default::default());
+        let fc4 = nn::linear(vs, 128, NUM_NUMBERS, Default::default());
+        LottoNN { fc1, fc2, fc3, fc4 }
     }
 
     fn forward(&self, xs: &Tensor) -> Tensor {
@@ -31,6 +33,8 @@ impl LottoNN {
             .apply(&self.fc2)
             .relu()
             .apply(&self.fc3)
+            .relu()
+            .apply(&self.fc4)
             .sigmoid() * LOTTO_MAX  // Output scaled to [0, LOTTO_MAX]
     }
 
@@ -180,6 +184,9 @@ fn main() {
                 println!("\nTraining completed with final loss: {:.6}", final_loss);
             }
         }
+    } else {
+        let final_loss = train_model(&vs, &model, inputs.clone(), targets.clone(), epochs);
+        println!("\nTraining completed with final loss: {:.6}", final_loss);
     }
 
     for _epoch in 0..epochs{

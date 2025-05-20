@@ -3,6 +3,7 @@ use rand::Rng;
 use std::vec::Vec;
 use tch::nn::OptimizerConfig;
 use std::path::Path;
+use std::collections::HashMap;
 
 
 const LOTTO_MAX: f64 = 49.0;  // Max lotto number
@@ -103,7 +104,7 @@ fn train_model(
     let mut final_loss = 0.0;
 
     for epoch in 0..num_epochs {
-        let mut total_loss = 0.0;
+        //let mut total_loss = 0.0;
         let mut f_loss= 0.0;
 
         for (input, target) in inputs.iter().zip(targets.iter()) {
@@ -113,7 +114,7 @@ fn train_model(
             let output = model.forward(&input_tensor);
             let loss = mse_loss(&output, &target_tensor);
             f_loss = f64::from(loss.detach());
-            total_loss += f_loss;
+            //total_loss += f_loss;
 
 
             optimizer.zero_grad();
@@ -121,11 +122,11 @@ fn train_model(
             optimizer.step();
         }
 
-        let avg_loss = total_loss / inputs.len() as f64;
+        //let avg_loss = total_loss / inputs.len() as f64;
         final_loss = f_loss; //avg_loss;
 
         if epoch % 100 == 0 {
-            println!("Epoch {}: Avg Loss = {:.6}", epoch, avg_loss);
+            println!("Epoch {}: Loss = {:.6}", epoch, final_loss);
         }
 
         if epoch % 1000 == 0 || final_loss <= 0.01 {
@@ -139,6 +140,7 @@ fn train_model(
         if final_loss <= 0.01 {
             break;
         }
+        
     }
 
     final_loss
@@ -153,12 +155,18 @@ fn generate_lotto_ticket(model: &LottoNN) -> Vec<u32> {
 }
 
 fn main() {
+    let epochs = 1000000;
     let model_file = "lotto_model.pt";
+
+    let mut stats: HashMap<u32, u32> = HashMap::new();
+
     let (inputs, targets) = generate_random_lotto_data();
 
     let mut vs = nn::VarStore::new(Device::Cpu);
 
-    let model: LottoNN;
+    let mut model: LottoNN = LottoNN::new(&vs.root());
+
+
 
     if Path::new(model_file).exists() {
         match LottoNN::load(&mut vs, model_file) {
@@ -168,19 +176,22 @@ fn main() {
             }
             Err(e) => {
                 println!("Failed to load model: {}. Proceeding with new model.", e);
-                model = LottoNN::new(&vs.root());
-                let final_loss = train_model(&vs, &model, inputs, targets, 1000000);
+                let final_loss = train_model(&vs, &model, inputs.clone(), targets.clone(), epochs);
                 println!("\nTraining completed with final loss: {:.6}", final_loss);
             }
         }
-    } else {
-        println!("No saved model found. Training a new one...");
-        model = LottoNN::new(&vs.root());
-        let final_loss = train_model(&vs, &model, inputs, targets, 1000000);
-        println!("\nTraining completed with final loss: {:.6}", final_loss);
     }
 
-    let ticket = generate_lotto_ticket(&model);
-    println!("Generated Lotto Ticket: {:?}", ticket);
+    for _epoch in 0..epochs{
+        let ticket = generate_lotto_ticket(&model);
+        for ticket_number in ticket{
+            *stats.entry(ticket_number).or_insert(0) += 1;
+        }
+    }
+
+    println!("Most probable WINNING numbers have higher percentage:");
+    for (number, value) in stats{
+        println!("{}={}%", number, value as i64/epochs*100)
+    }
 }
 

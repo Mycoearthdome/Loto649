@@ -15,6 +15,7 @@ struct LottoNN {
     fc2: nn::Linear,
     fc3: nn::Linear,
     fc4: nn::Linear,
+    fc5: nn::Linear,
 }
 
 impl LottoNN {
@@ -22,8 +23,9 @@ impl LottoNN {
         let fc1 = nn::linear(vs, NUM_NUMBERS, 512, Default::default());
         let fc2 = nn::linear(vs, 512, 256, Default::default());
         let fc3 = nn::linear(vs, 256, 128, Default::default());
-        let fc4 = nn::linear(vs, 128, NUM_NUMBERS, Default::default());
-        LottoNN { fc1, fc2, fc3, fc4 }
+        let fc4 = nn::linear(vs, 128, 64, Default::default());
+        let fc5 = nn::linear(vs, 64, NUM_NUMBERS, Default::default());
+        LottoNN { fc1, fc2, fc3, fc4, fc5 }
     }
 
     fn forward(&self, xs: &Tensor) -> Tensor {
@@ -35,6 +37,8 @@ impl LottoNN {
             .apply(&self.fc3)
             .relu()
             .apply(&self.fc4)
+            .relu()
+            .apply(&self.fc5)
             .sigmoid() * LOTTO_MAX  // Output scaled to [0, LOTTO_MAX]
     }
 
